@@ -71,6 +71,7 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            self.V[each_state] = np.max(self.one_step_lookahead(each_state))
 
         # Dont worry about this part
         self.statistics[Statistics.Rewards.value] = np.sum(self.V)
@@ -140,6 +141,7 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            return np.argmax(self.one_step_lookahead(state))
             
 
         return policy_fn
