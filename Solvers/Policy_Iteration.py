@@ -57,6 +57,10 @@ class PolicyIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            a = np.argmax(self.one_step_lookahead(s))
+            self.policy[s] = 0
+            self.policy[s,a] = 1
+            # print(self.policy)
 
 
         # In DP methods we don't interact with the environment so we will set the reward to be the sum of state values
@@ -103,6 +107,15 @@ class PolicyIteration(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        A = np.zeros([self.env.observation_space.n, self.env.observation_space.n])
+        b = np.zeros(self.env.observation_space.n)
+        for s, row in enumerate(A):
+            a = np.argmax(self.policy[s])
+            row[s] = 1
+            for prob, next_state, reward, done in self.env.P[s][a]:
+                row[next_state] -= prob * self.options.gamma
+                b[s] += prob * reward
+        self.V = np.linalg.solve(A,b)
 
     def create_greedy_policy(self):
         """
