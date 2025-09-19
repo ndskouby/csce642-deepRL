@@ -107,13 +107,20 @@ class PolicyIteration(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
-        A = np.zeros([self.env.observation_space.n, self.env.observation_space.n])
-        b = np.zeros(self.env.observation_space.n)
-        for s, row in enumerate(A):
+        n = self.env.observation_space.n
+        # Matrix A represents the coefficients of the state value variables on the left
+        # Initialize as an identity matrix because the equation for each state has a coefficient of 1 for that state
+        A = np.eye(n)
+        # Vector b represents the constant values on the right
+        b = np.zeros(n)
+        for s in range(n):
+            # Determine the action dictated by the policy
             a = np.argmax(self.policy[s])
-            row[s] = 1
             for prob, next_state, reward, done in self.env.P[s][a]:
-                row[next_state] -= prob * self.options.gamma
+                # For each state that could possibly be a result of the policy action, it needs to be subtracted to 
+                # the other side of the equation and multiplied by the probability and the discount factor
+                A[s][next_state] -= prob * self.options.gamma
+                # The constants are the weighted sum of the rewards based on probability
                 b[s] += prob * reward
         self.V = np.linalg.solve(A,b)
 
