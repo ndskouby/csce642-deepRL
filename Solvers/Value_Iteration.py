@@ -141,6 +141,7 @@ class ValueIteration(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            # Select the action with the highest v
             return np.argmax(self.one_step_lookahead(state))
             
 
@@ -197,6 +198,7 @@ class AsynchVI(ValueIteration):
         state = self.pq.pop()
         self.V[state] = max(self.one_step_lookahead(state))
 
+        # Update the priorities for all of the impacted states
         for s in self.pred[state]:
             best_action_value = np.max(self.one_step_lookahead(s))
             self.pq.update(s, -abs(self.V[s] - best_action_value))
