@@ -33,8 +33,8 @@ class MonteCarlo(AbstractSolver):
         # Keeps track of sum and count of returns for each state
         # to calculate an average. We could use an array to save all
         # returns (like in the book) but that's memory inefficient.
-        self.returns_sum = defaultdict(float)
-        self.returns_count = defaultdict(float)
+        self.returns_sum = defaultdict(lambda: np.zeros(env.action_space.n))
+        self.returns_count = defaultdict(lambda: np.zeros(env.action_space.n))
 
     def train_episode(self):
         """
@@ -65,6 +65,30 @@ class MonteCarlo(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        # Generate steps for the episode
+        done = False
+        steps = 0
+        # Repeat until a terminating condition is reached or max number of steps
+        while not done and steps < self.options.steps:
+            # Determine the action taken randomly based on the policy distribution
+            probs = self.policy(state)
+            action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Proceed to the next state based on the chosen action
+            next_state, reward, done, _ = self.step(action)
+            # Record the step and proceed to the next state
+            episode.append((state, action, reward))
+            state = next_state
+            steps += 1
+        
+        # Starting from the end of the episode, determine the value for G at each step
+        # Use G values to compute Q for each state and action as an average over time
+        G = 0
+        for t in reversed(range(len(episode))):
+            s, a, r = episode[t]
+            G = r + discount_factor * G
+            self.returns_sum[s][a] += G
+            self.returns_count[s][a] += 1
+            self.Q[s][a] = self.returns_sum[s][a]/self.returns_count[s][a]
 
     def __str__(self):
         return "Monte Carlo"
@@ -90,6 +114,13 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            # Initialize the probability array using the epsilon randomness
+            probs = np.full(nA, self.options.epsilon / nA)
+            # Determine the greedy solution
+            a_star = np.argmax(self.Q[observation])
+            # Update the probability distribution giving A* the greedy portion
+            probs[a_star] += 1 - self.options.epsilon
+            return probs
 
         return policy_fn
 
@@ -109,6 +140,8 @@ class MonteCarlo(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            # Return the index of the optimal action
+            return np.argmax(self.Q[state])
 
 
         return policy_fn
