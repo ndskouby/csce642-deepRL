@@ -6,6 +6,14 @@
 # Contributors:
 # The core code base was developed by Guni Sharon (guni@tamu.edu).
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A3
+# Date:        9/19/2025
+# ---------------------------------------------------------
+
 import numpy as np
 from Solvers.Abstract_Solver import AbstractSolver, Statistics
 
