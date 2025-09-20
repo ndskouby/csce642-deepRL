@@ -200,10 +200,40 @@ class OffPolicyMC(MonteCarlo):
         episode = []
         # Reset the environment
         state, _ = self.env.reset()
+        discount_factor = self.options.gamma
 
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        # Generate steps for the episode
+        done = False
+        steps = 0
+        # Repeat until a terminating condition is reached or max number of steps
+        while not done and steps < self.options.steps:
+            # Determine the action taken randomly based on the behavior policy distribution
+            probs = self.behavior_policy(state)
+            action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Proceed to the next state based on the chosen action
+            next_state, reward, done, _ = self.step(action)
+            # Record the step and proceed to the next state
+            episode.append((state, action, reward))
+            state = next_state
+            steps += 1
+        
+        # Starting from the end of the episode, determine the value for G at each step
+        # Use G and W values to compute Q and C for each state and action 
+        # Update W according to the importance sampling ratio
+        G = 0
+        W = 1
+        for t in reversed(range(len(episode))):
+            s, a, r = episode[t]
+            G = r + discount_factor * G
+            self.C[s][a] += W
+            self.Q[s][a] += (W/self.C[s][a]) * (G - self.Q[s][a])
+            if a != self.target_policy(s):
+                break
+            W *= (1/self.behavior_policy(s)[a])
+
         
 
     def create_random_policy(self):
