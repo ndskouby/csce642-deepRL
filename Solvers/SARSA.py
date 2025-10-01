@@ -6,6 +6,14 @@
 # Contributors:
 # The core code base was developed by Guni Sharon (guni@tamu.edu).
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A7
+# Date:        9/30/2025
+# ---------------------------------------------------------
+
 from collections import defaultdict
 import numpy as np
 from Solvers.Abstract_Solver import AbstractSolver
@@ -47,6 +55,23 @@ class Sarsa(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        done = False
+        step = 0
+        # Determine the action taken randomly based on the policy distribution
+        probs = self.epsilon_greedy_action(state)
+        action = np.random.choice(np.arange(len(probs)), p=probs)
+        while not done and step < self.options.steps:
+            # Take the chosen action and observe the next state and reward and termination
+            next_state, reward, done, _ = self.step(action)
+            # Choose the next action for the next state using the epsilon greedy policy
+            probs = self.epsilon_greedy_action(next_state)
+            next_action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Update Q for the state and action according to SARSA
+            self.Q[state][action] += self.options.alpha * (reward + self.options.gamma * self.Q[next_state][next_action] - self.Q[state][action])
+            # Update the state and action to next state and next action
+            state = next_state
+            action = next_action
+            step += 1
 
     def __str__(self):
         return "Sarsa"
@@ -63,6 +88,7 @@ class Sarsa(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            return np.argmax(self.Q[state])
 
         return policy_fn
 
@@ -80,6 +106,14 @@ class Sarsa(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        # Initialize the probability array using the epsilon randomness
+        probs = np.full(nA, self.options.epsilon / nA)
+        # Determine the greedy solution
+        a_star = np.argmax(self.Q[state])
+        # Update the probability distribution giving A* the greedy portion
+        probs[a_star] += 1 - self.options.epsilon
+        return probs
 
     def plot(self, stats, smoothing_window=20, final=False):
         plotting.plot_episode_stats(stats, smoothing_window, final=final)
