@@ -7,6 +7,14 @@
 # The core code base was developed by Guni Sharon (guni@tamu.edu) based on
 # code by by Denny Britz (repository: https://github.com/dennybritz/reinforcement-learning)
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A6 and A8
+# Date:        9/30/2025
+# ---------------------------------------------------------
+
 from collections import defaultdict
 
 import numpy as np
@@ -54,6 +62,19 @@ class QLearning(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        done = False
+        step = 0
+        while not done and step < self.options.steps:
+            # Determine the action taken randomly based on the policy distribution
+            probs = self.epsilon_greedy_action(state)
+            action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Determine the result of the chosen action
+            next_state, reward, done, _ = self.step(action)
+            # Update the Q value for the current state and chosen action
+            self.Q[state][action] += self.options.alpha * (reward + self.options.gamma * np.max(self.Q[next_state]) - self.Q[state][action])
+            # Proceed to the next state
+            state = next_state
+            step += 1
 
     def __str__(self):
         return "Q-Learning"
@@ -75,7 +96,7 @@ class QLearning(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            return -1
+            return np.argmax(self.Q[state])
 
         return policy_fn
 
@@ -93,6 +114,14 @@ class QLearning(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        # Initialize the probability array using the epsilon randomness
+        probs = np.full(nA, self.options.epsilon / nA)
+        # Determine the greedy solution
+        a_star = np.argmax(self.Q[state])
+        # Update the probability distribution giving A* the greedy portion
+        probs[a_star] += 1 - self.options.epsilon
+        return probs
 
 
 class ApproxQLearning(QLearning):
