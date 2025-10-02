@@ -151,6 +151,22 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        done = False
+        step = 0
+        while not done and step < self.options.steps:
+            # Determine the action taken randomly based on the policy distribution
+            probs = self.epsilon_greedy(state)
+            action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Determine the result of the chosen action
+            next_state, reward, done, _ = self.step(action)
+            # Predict the approximate Q value for the current state and chosen action
+            y = self.estimator.predict(state, action)
+            # Update the prediction to approach the new value
+            y += self.options.alpha * (reward + self.options.gamma * np.max(self.estimator.predict(next_state)) - y)
+            self.estimator.update(state, action, y)
+            # Proceed to the next state
+            state = next_state
+            step += 1
 
     def __str__(self):
         return "Approx Q-Learning"
@@ -169,6 +185,14 @@ class ApproxQLearning(QLearning):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        # Initialize the probability array using the epsilon randomness
+        probs = np.full(nA, self.options.epsilon / nA)
+        # Determine the greedy solution
+        a_star = np.argmax(self.estimator.predict(state,a=None))
+        # Update the probability distribution giving A* the greedy portion
+        probs[a_star] += 1 - self.options.epsilon
+        return probs
 
     def create_greedy_policy(self):
         """
@@ -184,7 +208,8 @@ class ApproxQLearning(QLearning):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
-            return -1
+            # Find the greedy solution based on the approximate prediciton
+            return np.argmax(self.estimator.predict(state,a=None))
             
 
         return policy_fn
