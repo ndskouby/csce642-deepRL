@@ -7,6 +7,14 @@
 # The core code base was developed by Guni Sharon (guni@tamu.edu).
 # The PyTorch code was developed by Sheelabhadra Dey (sheelabhadra@tamu.edu).
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A9
+# Date:        10/10/2025
+# ---------------------------------------------------------
+
 import random
 from copy import deepcopy
 from collections import deque
@@ -101,6 +109,16 @@ class DQN(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        nA = self.env.action_space.n
+        # Initialize the probability array using the epsilon randomness
+        probs = np.full(nA, self.options.epsilon / nA)
+        # Determine the greedy solution based on the model
+        state = torch.as_tensor(state)
+        values = self.model(state)
+        a_star = torch.argmax(values).item()
+        # Update the probability distribution giving A* the greedy portion
+        probs[a_star] += 1 - self.options.epsilon
+        return probs
 
 
     def compute_target_values(self, next_states, rewards, dones):
@@ -113,6 +131,15 @@ class DQN(AbstractSolver):
         ################################
         #   YOUR IMPLEMENTATION HERE   #
         ################################
+        # Compute the target Q values of the next states
+        target_q_vals = self.target_model(next_states)
+        # Get the target Q value for the maximized action
+        max_target_q_vals, _ = torch.max(target_q_vals, dim=1)
+
+        # Use the next state target Q values and the rewards to calculate the label values
+        targets = rewards.clone()
+        targets[~dones.bool()] += self.options.gamma * max_target_q_vals[~dones.bool()]
+        return targets
 
 
     def replay(self):
@@ -188,6 +215,25 @@ class DQN(AbstractSolver):
             ################################
             #   YOUR IMPLEMENTATION HERE   #
             ################################
+            # Determine the action taken randomly based on the policy distribution
+            probs = self.epsilon_greedy(state)
+            action = np.random.choice(np.arange(len(probs)), p=probs)
+            # Determine the result of the chosen action
+            next_state, reward, done, _ = self.step(action)
+            # Store the transition in the replay buffer
+            self.memorize(state, action, reward, next_state, done)
+            # Perform TD learning for the Q values on past transitions
+            self.replay()
+            # Proceed to the next state
+            state = next_state
+            self.n_steps += 1
+            # Every N steps copy the parameters from the Q estimator to the target estimator
+            if self.n_steps >= self.options.update_target_estimator_every:
+                self.n_steps = 0
+                self.update_target_model()
+            # End the espisode if the last action is terminal
+            if done:
+                break
 
 
     def __str__(self):
