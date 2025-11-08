@@ -73,9 +73,14 @@ class Reinforce(AbstractSolver):
         Returns:
             The per step return along an episode (as a list).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        n = len(rewards)
+        returns = [0] * n
+        G = 0
+        # Starting from the end of the episode cummulatively update G with discounted rewards
+        for t in reversed(range(n)):
+            G = rewards[t] + gamma * G
+            returns[t] = G
+        return returns
 
     def select_action(self, state):
         """
@@ -133,11 +138,18 @@ class Reinforce(AbstractSolver):
         action_probs = []  # Action probability
         baselines = []  # Value function
         for _ in range(self.options.steps):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            # Run update_model() only ONCE #
-            # at the END of an episode.    #
-            ################################
+            # Generate an episode
+            action, prob, base = self.select_action(state)
+            next_state, reward, done, _ = self.step(action)
+            # Append episode data to lists for mode update
+            rewards.append(reward)
+            action_probs.append(prob)
+            baselines.append(base)
+            state = next_state
+            if done:
+                break
+        # Update model based on whole episode
+        self.update_model(rewards, action_probs, baselines)
 
 
     def pg_loss(self, advantage, prob):
@@ -156,9 +168,8 @@ class Reinforce(AbstractSolver):
         Returns:
             The unreduced loss (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        pg_loss = -torch.log(prob) * advantage
+        return pg_loss
 
 
     def __str__(self):
