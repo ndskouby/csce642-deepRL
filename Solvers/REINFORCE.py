@@ -7,6 +7,14 @@
 # The core code base was developed by Guni Sharon (guni@tamu.edu).
 # The PyTorch code was developed by Sheelabhadra Dey (sheelabhadra@tamu.edu).
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A10
+# Date:        11/7/2025
+# ---------------------------------------------------------
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
