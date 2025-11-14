@@ -7,6 +7,14 @@
 # The core code was developed by Guni Sharon (guni@tamu.edu).
 # The PyTorch code was developed by Sheelabhadra Dey (sheelabhadra@tamu.edu).
 
+# ---------------------------------------------------------
+# Name:        Nathan Skouby
+# UIN:         128009334
+# Course:      CSCE642
+# Assignment:  A11
+# Date:        11/13/2025
+# ---------------------------------------------------------
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -124,12 +132,25 @@ class A2C(AbstractSolver):
 
         state, _ = self.env.reset()
         for _ in range(self.options.steps):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            # Run update_actor_critic()    #
-            # only ONCE at EACH step in    #
-            # an episode.                  # 
-            ################################
+            # Choose an action using the soft policy
+            action, prob, value = self.select_action(state)
+            # Take the chosen action and record the result
+            next_state, reward, done, _ = self.step(action)
+            # Determine the next_value estimate
+            if done:
+                next_value = torch.tensor(0.0)
+            else:
+                next_state_tensor = torch.as_tensor(next_state, dtype=torch.float32)
+                _, next_value = self.actor_critic(next_state_tensor)
+
+            # Calculate the advantage (TD error) using the reward and value estimates
+            advantage = reward + self.options.gamma * next_value.detach() - value
+            # Update the actor critic parameters
+            self.update_actor_critic(advantage, prob, value)
+
+            state = next_state
+            if done:
+                break
 
     def actor_loss(self, advantage, prob):
         """
@@ -147,9 +168,8 @@ class A2C(AbstractSolver):
         Returns:
             The unreduced loss (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################)
+        loss =  -torch.log(prob) * advantage
+        return loss
 
     def critic_loss(self, advantage, value):
         """
@@ -162,9 +182,8 @@ class A2C(AbstractSolver):
         Returns:
             The unreduced loss (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        loss = -advantage * value
+        return loss
 
     def __str__(self):
         return "A2C"
