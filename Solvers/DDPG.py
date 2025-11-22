@@ -151,9 +151,11 @@ class DDPG(AbstractSolver):
         Returns:
             The target q value (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        # Determine the greedy action for each next_state
+        next_actions = self.target_actor_critic.pi(next_states)
+        # Compute the target using the rewards and q_values for next_state and next_action
+        target = rewards + self.options.gamma * (1 - dones) * self.target_actor_critic.q(next_states, next_actions)
+        return target
 
 
     def replay(self):
@@ -217,9 +219,21 @@ class DDPG(AbstractSolver):
 
         state, _ = self.env.reset()
         for _ in range(self.options.steps):
-            ################################
-            #   YOUR IMPLEMENTATION HERE   #
-            ################################
+            # Sample the action from the policy based on the state
+            action = self.select_action(state)
+            # Execute the action and observe the result
+            next_state, reward, done, _ = self.step(action)
+            # Store the results in the replay buffer
+            self.memorize(state, action, reward, next_state, done)
+            # Sample a batch of transitions from the replay buffer and update the actor_critic network
+            self.replay()
+            # Update the target networks
+            self.update_target_networks()
+            # Progress to next state
+            state = next_state
+            # End the episode early if a terminal state is reached
+            if done:
+                break
             
 
     def q_loss(self, current_q, target_q):
@@ -233,9 +247,8 @@ class DDPG(AbstractSolver):
         Returns:
             The unreduced loss (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        # Return the MSE loss as the difference of the current and target Q values squared
+        return torch.pow((current_q - target_q), 2)
 
     def pi_loss(self, states):
         """
@@ -255,9 +268,12 @@ class DDPG(AbstractSolver):
         Returns:
             The unreduced loss (as a tensor).
         """
-        ################################
-        #   YOUR IMPLEMENTATION HERE   #
-        ################################
+        # Determine the greedy action for each state
+        actions = self.actor_critic.pi(states)
+        # Compute the Q values for the state action pairs
+        q_vals = self.actor_critic.q(states, actions)
+        # Return the loss as the negation of the Q values
+        return -q_vals
 
     def __str__(self):
         return "DDPG"
